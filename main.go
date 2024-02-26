@@ -20,7 +20,7 @@ func main() {
 		Type:        ginmetrics.Counter,
 		Name:        "redirects_processed",
 		Description: "number of redirects processed",
-		Labels:      []string{"redirectTo"},
+		Labels:      []string{"redirectTo", "fullPath"},
 	}
 
 	// get global Monitor object
@@ -37,9 +37,8 @@ func main() {
 
 	// set middleware for gin
 	m.Use(r)
-
 	r.NoRoute(func(c *gin.Context) {
-		_ = ginmetrics.GetMonitor().GetMetric("redirects_processed").Inc([]string{})
+		_ = ginmetrics.GetMonitor().GetMetric("redirects_processed").Inc([]string{redirectTo, c.FullPath()})
 		c.Redirect(301, redirectTo)
 	})
 	_ = r.Run() // listen and serve on 0.0.0.0:8080
