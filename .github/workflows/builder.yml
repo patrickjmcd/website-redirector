@@ -1,0 +1,46 @@
+name: Image-Builder
+
+on:
+  push:
+    branches:
+      - main
+  release:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  image-builder:
+    name: Build multi-arch image
+    runs-on: ubuntu-latest
+    env:
+      KO_DOCKER_REPO: ghcr.io/patrickjmcd/website-redirector
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Image Tag
+        id: get_image_tag
+        uses: patrickjmcd/get-image-tag@main
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "go.mod"
+          check-latest: true
+
+      - uses: ko-build/setup-ko@v0.6
+
+      - name: Build Tagged Image
+        run: |
+          echo "Building image with tag: ${{ steps.get_image_tag.outputs.image_tag }}"
+          ko build --platform=linux/arm64,linux/amd64 --bare --tags=${{ steps.get_image_tag.outputs.image_tag }},latest main.go
